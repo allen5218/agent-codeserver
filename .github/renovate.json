@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "timezone": "Asia/Taipei",
+  "schedule": ["after 2am on monday"],
+  "pinDigests": true,
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": true,
+      "automergeStrategy": "squash"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["codercom/code-server"],
+      "groupName": "code-server base image",
+      "automerge": false
+    }
+  ]
+}
