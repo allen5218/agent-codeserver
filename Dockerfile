@@ -68,6 +68,7 @@ RUN code-server \
         --install-extension DavidAnson.vscode-markdownlint \
         --install-extension ms-vscode.cmake-tools \
         --install-extension ms-python.python \
+        --install-extension ms-toolsai.jupyter \
         --install-extension Anthropic.claude-code \
         --install-extension openai.chatgpt
 
