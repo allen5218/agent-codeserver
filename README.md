@@ -22,6 +22,17 @@ Built on `codercom/code-server:4.121.0` (Debian-based, `linux/amd64`).
 - **Node.js 22 LTS** with `npm`
 - **uv** — Astral’s Python package and project manager, installed to `/usr/local/bin/`
 
+### Office and document tools
+
+- **LibreOffice** — full office suite, usable headlessly via `unoserver`
+- `python3-uno` — Python–UNO bridge for LibreOffice scripting
+- `unoserver` — exposes LibreOffice over a network socket for programmatic document conversion
+
+### Archive and utility tools
+
+- `tmux` — terminal multiplexer
+- `zip`, `unzip`, `p7zip-full` — archive creation and extraction
+
 ### Python libraries (system-wide)
 
 Installed so AI agents can manipulate Office documents programmatically without per-project venv setup:
@@ -30,6 +41,7 @@ Installed so AI agents can manipulate Office documents programmatically without 
 - `python-docx`
 - `openpyxl`
 - `pgcli`
+- `unoserver`
 
 ### Database clients
 
@@ -50,6 +62,9 @@ Sourced from [Open VSX](https://open-vsx.org/):
 |CMake Tools   |`ms-vscode.cmake-tools`                |
 |markdownlint  |`DavidAnson.vscode-markdownlint`       |
 |Python        |`ms-python.python`                     |
+|Jupyter       |`ms-toolsai.jupyter`                   |
+|Claude Code   |`Anthropic.claude-code`                |
+|ChatGPT       |`openai.chatgpt`                       |
 
 Extensions are baked into `/opt/extensions-seed/` at build time. On first container start, a small entrypoint wrapper seeds them into the user’s extensions directory so they survive bind-mount overlays and remain user-editable at runtime.
 
@@ -57,7 +72,7 @@ Extensions are baked into `/opt/extensions-seed/` at build time. On first contai
 
 Published to GitHub Container Registry on every push to `main` and on `v*` tags:
 
-```
+```text
 ghcr.io/allen5218/agent-codeserver:<tags>
 ```
 
