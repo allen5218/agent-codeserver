@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         zip \
         unzip \
         p7zip-full \
+        libreoffice \ 
+        python3-uno \ 
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Claude Code（official Anthropic apt repo）----
@@ -40,7 +42,8 @@ RUN pip3 install --no-cache-dir --break-system-packages \
         python-pptx \
         python-docx \
         openpyxl \
-        pgcli
+        pgcli\
+        unoserver
 
 # ---- AI CLIs（npm global）----
 RUN npm install -g @openai/codex
