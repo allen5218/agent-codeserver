@@ -67,7 +67,9 @@ RUN code-server \
         --install-extension twxs.cmake \
         --install-extension DavidAnson.vscode-markdownlint \
         --install-extension ms-vscode.cmake-tools \
-        --install-extension ms-python.python
+        --install-extension ms-python.python \
+        --install-extension Anthropic.claude-code \
+        --install-extension openai.chatgpt
 
 # ---- 開放讀取權限 + entrypoint ----
 USER root
