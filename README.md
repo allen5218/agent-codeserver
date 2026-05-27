@@ -64,7 +64,7 @@ Sourced from [Open VSX](https://open-vsx.org/):
 |Python        |`ms-python.python`                     |
 |Jupyter       |`ms-toolsai.jupyter`                   |
 |Claude Code   |`Anthropic.claude-code`                |
-|ChatGPT       |`openai.chatgpt`                       |
+|Codex         |`openai.chatgpt`                       |
 
 Extensions are baked into `/opt/extensions-seed/` at build time. On first container start, a small entrypoint wrapper seeds them into the user’s extensions directory so they survive bind-mount overlays and remain user-editable at runtime.
 
