@@ -73,5 +73,5 @@ RUN chmod +x /usr/local/bin/seed-and-run.sh
 ENV PATH="/home/coder/.local/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/seed-and-run.sh"]
-CMD []
+CMD ["--bind-addr", "0.0.0.0:8080", "."]
 
