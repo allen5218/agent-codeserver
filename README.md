@@ -113,6 +113,17 @@ The image entrypoint is `/usr/local/bin/seed-and-run.sh`:
 1. On first run, copies baked extensions from `/opt/extensions-seed/` into `$XDG_DATA_HOME/code-server/extensions/` if that directory is empty.
 1. Delegates to the original `codercom/code-server` entrypoint, which handles `fixuid` and launches `code-server`.
 
+## Agent context docs
+
+[`agent-docs/`](./agent-docs/) contains reference sheets for AI agents running inside the container:
+
+| File | Read by |
+| ---- | ------- |
+| [`agent-docs/CLAUDE.md`](./agent-docs/CLAUDE.md) | Claude Code (point it at the file with `@agent-docs/CLAUDE.md`) |
+| [`agent-docs/AGENTS.md`](./agent-docs/AGENTS.md) | OpenAI Codex and other agents that honour `AGENTS.md` |
+
+Both files document the pre-installed tools, library locations, and example commands available in the container.
+
 ## Build
 
 The image builds automatically via GitHub Actions:
