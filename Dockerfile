@@ -1,12 +1,8 @@
 FROM codercom/code-server:4.121.0
 USER root
-# 跟 runtime 一致，讓 build 階段的路徑邏輯對齊
 ENV XDG_DATA_HOME=/home/coder/.config
 
 # ---- 系統套件 ----
-# build-essential 涵蓋 gcc/g++/make
-# clangd 給 clangd extension 用；cmake 給 cmake-tools 用
-# tmux 給長時 session 用
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
@@ -16,6 +12,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-venv \
         tmux \
         curl ca-certificates git \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---- Claude Code（official Anthropic apt repo）----
+RUN install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://downloads.claude.ai/keys/claude-code.asc \
+        -o /etc/apt/keyrings/claude-code.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/claude-code.asc] https://downloads.claude.ai/claude-code/apt/stable stable main" \
+        > /etc/apt/sources.list.d/claude-code.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends claude-code \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Node.js 22 LTS（給 codex 用）----
@@ -65,8 +71,8 @@ RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local
 COPY entrypoint.sh /usr/local/bin/seed-and-run.sh
 RUN chmod +x /usr/local/bin/seed-and-run.sh
 
-# 讓 agy 跟其他 user-local binary 都在 PATH
 ENV PATH="/home/coder/.local/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/seed-and-run.sh"]
 CMD []
+
