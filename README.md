@@ -59,7 +59,7 @@ Extensions are baked into `/opt/extensions-seed/` at build time. On first contai
 Published to GitHub Container Registry on every push to `main` and on `v*` tags:
 
 ```
-ghcr.io/<owner>/agent-codeserver:latest
+ghcr.io/allen5218/agent-codeserver:<tags>
 ```
 
 Available tags:
