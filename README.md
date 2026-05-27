@@ -18,7 +18,6 @@ Built on `codercom/code-server:4.121.0` (Debian-based, `linux/amd64`).
 
 - `gcc`, `g++`, `make` (via `build-essential`)
 - `cmake`, `clangd` — for C/C++ work alongside the bundled extensions
-- `git`, `tmux`, `curl`, `ca-certificates`
 - **Python 3** with `pip` and `venv`
 - **Node.js 22 LTS** with `npm`
 - **uv** — Astral’s Python package and project manager, installed to `/usr/local/bin/`
