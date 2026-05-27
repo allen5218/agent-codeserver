@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3-pip \
         python3-venv \
         tmux \
+        zip \
+        unzip \
+        p7zip-full \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Claude Code（official Anthropic apt repo）----
