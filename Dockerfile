@@ -73,7 +73,8 @@ RUN code-server \
         --install-extension ms-python.debugpy \
         --install-extension ms-toolsai.jupyter \
         --install-extension Anthropic.claude-code \
-        --install-extension openai.chatgpt
+        --install-extension openai.chatgpt \
+        --uninstall-extension ms-python.vscode-python-envs
 
 # ---- 開放讀取權限 + entrypoint ----
 USER root
