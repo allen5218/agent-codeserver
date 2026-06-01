@@ -69,7 +69,8 @@ RUN code-server \
         --install-extension DavidAnson.vscode-markdownlint \
         --install-extension ms-vscode.cmake-tools \
         --install-extension charliermarsh.ruff \
-        --install-extension anysphere.pyright \
+        --install-extension detachhead.basedpyright \
+        --install-extension the0807.uv-toolkit \
         --install-extension ms-toolsai.jupyter \
         --install-extension Anthropic.claude-code \
         --install-extension openai.chatgpt \
