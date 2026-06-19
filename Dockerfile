@@ -15,8 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         zip \
         unzip \
         p7zip-full \
-        libreoffice \ 
-        python3-uno \ 
+        libreoffice \
+        python3-uno \
+        bubblewrap \
+    && groupadd -r bwrap-users \
+    && usermod -aG bwrap-users coder \
+    && chgrp bwrap-users /usr/bin/bwrap \
+    && chmod 4750 /usr/bin/bwrap \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Claude Code（official Anthropic apt repo）----
@@ -46,14 +51,16 @@ RUN pip3 install --no-cache-dir --break-system-packages \
         pgcli\
         unoserver
 
-# ---- AI CLIs（npm global）----
-RUN npm install -g @openai/codex
-
 # ---- 準備 extension seed 目錄 ----
 RUN mkdir -p /opt/extensions-seed && chown coder:coder /opt/extensions-seed
 
 # ---- 切到 coder 裝 user-scope 的東西 ----
 USER coder
+
+# ---- AI CLIs（npm user-scope，coder 可自行更新）----
+RUN mkdir -p /home/coder/.npm-global \
+    && npm config set prefix '/home/coder/.npm-global' \
+    && npm install -g @openai/codex
 
 # Antigravity CLI → /home/coder/.local/bin/agy
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
@@ -78,13 +85,12 @@ RUN code-server \
 
 # ---- 開放讀取權限 + entrypoint ----
 USER root
-RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local
+RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local /home/coder/.npm-global
 
 COPY entrypoint.sh /usr/local/bin/seed-and-run.sh
 RUN chmod +x /usr/local/bin/seed-and-run.sh
 
-ENV PATH="/home/coder/.local/bin:${PATH}"
+ENV PATH="/home/coder/.npm-global/bin:/home/coder/.local/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/seed-and-run.sh"]
 CMD ["--bind-addr", "0.0.0.0:8080", "."]
-
