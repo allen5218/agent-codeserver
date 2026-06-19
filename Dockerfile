@@ -90,6 +90,10 @@ RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local /home/coder/.npm-globa
 COPY entrypoint.sh /usr/local/bin/seed-and-run.sh
 RUN chmod +x /usr/local/bin/seed-and-run.sh
 
+# 確保 code-server 開啟的互動式 bash session 也能找到 user-scope 的 CLI 工具
+RUN echo 'export PATH="/home/coder/.npm-global/bin:/home/coder/.local/bin:$PATH"' \
+    > /etc/profile.d/coder-paths.sh
+
 ENV PATH="/home/coder/.npm-global/bin:/home/coder/.local/bin:${PATH}"
 
 ENTRYPOINT ["/usr/local/bin/seed-and-run.sh"]
