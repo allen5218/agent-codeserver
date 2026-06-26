@@ -4,15 +4,27 @@ A customized [code-server](https://github.com/coder/code-server) Docker image pr
 
 ## What’s inside
 
-Built on `codercom/code-server:4.121.0` (Debian-based, `linux/amd64`).
+Built on `codercom/code-server:4.125.0` (Debian-based, `linux/amd64`).
 
 ### AI coding assistants
 
-|Tool                              |Source                           |Notes                                                                                      |
-|----------------------------------|---------------------------------|-------------------------------------------------------------------------------------------|
-|**Claude Code**                   |Official Anthropic apt repository|Native binary at `/usr/bin/claude`. Auto-update disabled; updates arrive via image rebuild.|
-|**OpenAI Codex CLI**              |npm (`@openai/codex`)            |                                                                                           |
-|**Google Antigravity CLI** (`agy`)|Official install script          |Installed to `/home/coder/.local/bin/`.                                                    |
+|Tool                              |Source                           |Notes                                                                                                                  |
+|----------------------------------|---------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+|**Claude Code**                   |Official Anthropic apt repository|Native binary at `/usr/bin/claude`. Auto-update disabled; updates arrive via image rebuild.                            |
+|**OpenAI Codex CLI**              |npm (`@openai/codex`)            |Installed user-scope under `/home/coder/.npm-global/` so `coder` can `npm update` it without root. See sandbox note below.|
+|**Google Antigravity CLI** (`agy`)|Official install script          |Installed to `/home/coder/.local/bin/`.                                                                                |
+
+#### Codex remote-control (auto-started)
+
+On container start the entrypoint launches `codex remote-control` in the background, supervised by a restart loop (re-spawns 5s after any exit). This lets you drive the in-container Codex agent remotely without manually attaching a shell.
+
+- Logs stream to `/home/coder/.codex/remote-control.log`.
+- Disable it by setting `ENABLE_CODEX_REMOTE=0`.
+- Skipped automatically if the `codex` binary is not on `PATH`.
+
+#### Codex sandbox (bubblewrap)
+
+`bubblewrap` is installed and `/usr/bin/bwrap` is configured setuid-root (`chmod 4750`, owned by the `bwrap-users` group, with `coder` added to it). This gives Codex CLI a working command-execution sandbox inside the container without granting `coder` broad root access.
 
 ### Build and development tools
 
@@ -61,10 +73,14 @@ Sourced from [Open VSX](https://open-vsx.org/):
 |CMake         |`twxs.cmake`                           |
 |CMake Tools   |`ms-vscode.cmake-tools`                |
 |markdownlint  |`DavidAnson.vscode-markdownlint`       |
-|Python        |`ms-python.python`                     |
+|Ruff          |`charliermarsh.ruff`                   |
+|basedpyright  |`detachhead.basedpyright`              |
+|uv Toolkit    |`the0807.uv-toolkit`                   |
 |Jupyter       |`ms-toolsai.jupyter`                   |
 |Claude Code   |`Anthropic.claude-code`                |
 |Codex         |`openai.chatgpt`                       |
+
+Python tooling uses **Ruff** (lint/format) and **basedpyright** (type checking) instead of the Microsoft Python extension; the build also uninstalls `ms-python.vscode-python-envs` to avoid env-picker conflicts with `uv`.
 
 Extensions are baked into `/opt/extensions-seed/` at build time. On first container start, a small entrypoint wrapper seeds them into the user’s extensions directory so they survive bind-mount overlays and remain user-editable at runtime.
 
@@ -87,10 +103,11 @@ Built for `linux/amd64`.
 
 ## Environment
 
-|Variable       |Required                        |Purpose                                                           |
-|---------------|--------------------------------|------------------------------------------------------------------|
-|`PASSWORD`     |Yes                             |code-server login password                                        |
-|`XDG_DATA_HOME`|Pre-set to `/home/coder/.config`|Consolidates code-server config and extensions into a single mount|
+|Variable              |Required                        |Purpose                                                                     |
+|----------------------|--------------------------------|----------------------------------------------------------------------------|
+|`PASSWORD`            |Yes                             |code-server login password                                                  |
+|`XDG_DATA_HOME`       |Pre-set to `/home/coder/.config`|Consolidates code-server config and extensions into a single mount          |
+|`ENABLE_CODEX_REMOTE` |No (defaults to `1`)            |Set to `0` to skip auto-starting the background `codex remote-control` loop |
 
 ## Suggested persistent paths
 
@@ -101,8 +118,9 @@ Mount these as volumes to preserve state across container restarts:
 |`/home/coder/.config`                             |code-server settings, keybindings, and installed extensions|
 |`/home/coder/project`                             |Workspace / working directory                              |
 |`/home/coder/.claude` + `/home/coder/.claude.json`|Claude Code state and OAuth token                          |
-|`/home/coder/.codex`                              |OpenAI Codex auth, sessions, and history                   |
+|`/home/coder/.codex`                              |OpenAI Codex auth, sessions, history, and remote-control log|
 |`/home/coder/.gemini`                             |Antigravity tasks, MCP configs, and rules                  |
+|`/home/coder/.npm-global`                         |User-scope npm prefix; persist to keep `npm update`d Codex  |
 
 The Antigravity CLI’s own settings (`~/.config/antigravity/`, `~/.config/agy/`) are covered by the `~/.config` mount automatically.
 
@@ -111,6 +129,7 @@ The Antigravity CLI’s own settings (`~/.config/antigravity/`, `~/.config/agy/`
 The image entrypoint is `/usr/local/bin/seed-and-run.sh`:
 
 1. On first run, copies baked extensions from `/opt/extensions-seed/` into `$XDG_DATA_HOME/code-server/extensions/` if that directory is empty.
+1. Unless `ENABLE_CODEX_REMOTE=0`, starts `codex remote-control` in the background under a supervisor loop (restarts 5s after any exit), logging to `/home/coder/.codex/remote-control.log`.
 1. Delegates to the original `codercom/code-server` entrypoint, which handles `fixuid` and launches `code-server`.
 
 ## Agent context docs
