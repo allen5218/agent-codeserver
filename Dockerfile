@@ -51,6 +51,16 @@ RUN pip3 install --no-cache-dir --break-system-packages \
         pgcli\
         unoserver
 
+# ---- Playwright 瀏覽器存放路徑 + 系統相依函式庫 ----
+# 瀏覽器二進位放固定系統路徑（build 時下載一次，container 以任意 UID 執行皆可讀取）。
+# 系統函式庫透過 Playwright 自帶的 install-deps 安裝，版本永遠跟著 Playwright 走，
+# 不必手動維護一長串 lib* 套件清單。
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright && chown coder:coder /ms-playwright \
+    && apt-get update \
+    && uvx playwright install-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
+
 # ---- 準備 extension seed 目錄 ----
 RUN mkdir -p /opt/extensions-seed && chown coder:coder /opt/extensions-seed
 
@@ -64,6 +74,12 @@ RUN mkdir -p /home/coder/.npm-global \
 
 # Antigravity CLI → /home/coder/.local/bin/agy
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
+
+# ---- Playwright CLI（uv 全域安裝）+ 預載 Chromium ----
+# uv tool install 把 playwright CLI 裝進隔離 venv，指令連結到 /home/coder/.local/bin/playwright。
+# 接著下載 Chromium 到 PLAYWRIGHT_BROWSERS_PATH（/ms-playwright），供 agent 直接以 CLI 操作。
+RUN uv tool install playwright \
+    && playwright install chromium
 
 # Bake VS Code extensions 到 seed 目錄
 RUN code-server \
@@ -85,7 +101,7 @@ RUN code-server \
 
 # ---- 開放讀取權限 + entrypoint ----
 USER root
-RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local /home/coder/.npm-global
+RUN chmod -R a+rX /opt/extensions-seed /home/coder/.local /home/coder/.npm-global /ms-playwright
 
 COPY entrypoint.sh /usr/local/bin/seed-and-run.sh
 RUN chmod +x /usr/local/bin/seed-and-run.sh

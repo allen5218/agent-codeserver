@@ -4,7 +4,7 @@ A customized [code-server](https://github.com/coder/code-server) Docker image pr
 
 ## What’s inside
 
-Built on `codercom/code-server:4.125.0` (Debian-based, `linux/amd64`).
+Built on `codercom/code-server:4.126.0` (Debian-based). Published as a multi-arch image for `linux/amd64` and `linux/arm64`.
 
 ### AI coding assistants
 
@@ -60,6 +60,20 @@ Installed so AI agents can manipulate Office documents programmatically without 
 - `psql` (PostgreSQL client)
 - `pgcli` (PostgreSQL CLI with autocomplete and syntax highlighting)
 
+### Headless browser (Playwright)
+
+For driving a headless browser from the CLI — page scraping, automation, `codegen`:
+
+- **Playwright CLI** — the Python `playwright` package, installed globally via `uv tool install` (isolated venv, command at `/home/coder/.local/bin/playwright`).
+- **Chromium** — pre-downloaded at build time into `/ms-playwright` (`PLAYWRIGHT_BROWSERS_PATH`), so it is available the moment the container starts and is readable regardless of the runtime UID.
+- System libraries are installed via Playwright's own `install-deps`, so they always match the bundled browser version.
+
+Notes:
+
+- The container runs as a **non-root** user, so launch Chromium with `--no-sandbox` (e.g. `chromium.launch(args=["--no-sandbox"])`, or `--no-sandbox` on the CLI) — the in-process Chromium sandbox needs privileges the container does not grant.
+- The runtime needs a large `/dev/shm` or Chromium will crash on big pages; the supplied `compose.yml` sets `shm_size: "1gb"` and `init: true` for the `code-server` service.
+- Only the **global CLI** is provided. A project that imports Playwright in its own scripts should add it as a project dependency (e.g. `uv add playwright`); it will reuse the already-downloaded Chromium in `/ms-playwright` automatically (no second download).
+
 ### Pre-installed VS Code extensions
 
 Sourced from [Open VSX](https://open-vsx.org/):
@@ -99,7 +113,56 @@ Available tags:
 - `YYYY-MM-DD` — date-stamped snapshots from `main`
 - `v*` — release tags
 
-Built for `linux/amd64`.
+Each tag is a multi-arch manifest covering `linux/amd64` and `linux/arm64`; `docker pull` automatically selects the right architecture. CI builds each architecture natively (amd64 on `ubuntu-latest`, arm64 on `ubuntu-24.04-arm`) and merges them into a single manifest.
+
+## Deployment (Docker Compose)
+
+The repo ships a [`compose.yml`](./compose.yml) running two services: `code-server` (this image) and a `cloudflared` tunnel that exposes it without opening any inbound ports.
+
+### 1. Prepare host directories
+
+Create the bind-mount targets and hand them to the UID:GID the container will run as (must match `APP_UID`/`APP_GID` in `.env`):
+
+```bash
+# 建目錄（對應 compose.yml 掛載的 volume）
+sudo mkdir -p /opt/docker-stacks/vscode/{data,projects,codex,gemini,claude}
+
+# Claude Code 需要一個既存的 JSON 檔來掛載
+echo '{}' | sudo tee /opt/docker-stacks/vscode/claude.json > /dev/null
+
+# 全部 chown 給容器要用的 UID:GID（這裡用 1000:1000，依 .env 調整）
+sudo chown -R 1000:1000 /opt/docker-stacks/vscode
+```
+
+> `~/.local`（Playwright、Antigravity）與 `~/.npm-global`（Codex）**刻意不掛載**——這些 CLI 是 build 時烤進 image 的，用空目錄覆蓋會把它們遮蔽掉。要持久化使用者自行 `npm update` 的 Codex 時才另外掛 `~/.npm-global`（見下方 Suggested persistent paths）。
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+# 編輯 .env：填入 CODE_PASSWORD、APP_UID/APP_GID、CF_TUNNEL_TOKEN
+```
+
+See [`.env.example`](./.env.example) for the full list.
+
+### 3. Cloudflare Tunnel
+
+1. Zero Trust dashboard → **Networks → Tunnels → Create a tunnel**
+2. 選 **Cloudflared**，命名（例如 `homelab`）
+3. **Copy token** — 這就是 `.env` 裡的 `CF_TUNNEL_TOKEN`
+4. **Public Hostname** 頁籤新增一筆：
+   - **Subdomain**: `code`
+   - **Domain**: `your.dev`
+   - **Type**: `HTTP`
+   - **URL**: `code-server:8080`（compose 服務名 + 容器內 port，同網段直接解析）
+
+### 4. Start
+
+```bash
+docker compose up -d
+```
+
+開啟 `https://code.your.dev`，用 `CODE_PASSWORD` 登入即可。
 
 ## Environment
 
@@ -108,6 +171,8 @@ Built for `linux/amd64`.
 |`PASSWORD`            |Yes                             |code-server login password                                                  |
 |`XDG_DATA_HOME`       |Pre-set to `/home/coder/.config`|Consolidates code-server config and extensions into a single mount          |
 |`ENABLE_CODEX_REMOTE` |No (defaults to `1`)            |Set to `0` to skip auto-starting the background `codex remote-control` loop |
+
+The table above lists **container-side** variables. When deploying with `compose.yml`, the **host-side** values come from `.env`: `CODE_PASSWORD` (mapped to `PASSWORD`), `APP_UID`/`APP_GID` (container run-as identity), and `CF_TUNNEL_TOKEN` (Cloudflare tunnel). See [`.env.example`](./.env.example).
 
 ## Suggested persistent paths
 

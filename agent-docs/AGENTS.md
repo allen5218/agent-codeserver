@@ -1,7 +1,8 @@
 # Container Environment for AI Agents
 
-This is a `codercom/code-server`-based dev container (`linux/amd64`, Debian-based).
-The notes below describe tools that are available to agents running inside it.
+This is a `codercom/code-server`-based dev container (Debian-based; published for
+`linux/amd64` and `linux/arm64`). The notes below describe tools that are available
+to agents running inside it.
 
 ---
 
@@ -13,6 +14,7 @@ The notes below describe tools that are available to agents running inside it.
 | `codex` | npm global (on `PATH`) |
 | `agy` | `/home/coder/.local/bin/agy` |
 | `uv` | `/usr/local/bin/uv` |
+| `playwright` | `/home/coder/.local/bin/playwright` |
 | `unoconvert` | installed with `unoserver` pip package |
 
 ---
@@ -81,6 +83,41 @@ node -e "console.log('hello')"
 npm install
 npx ts-node script.ts
 ```
+
+---
+
+## Headless browser / web scraping (Playwright)
+
+A global `playwright` CLI is preinstalled (Python package, via `uv tool install`).
+Chromium is pre-downloaded at `/ms-playwright` (`PLAYWRIGHT_BROWSERS_PATH`) and is ready
+the moment the container starts — no `playwright install` needed.
+
+**The container runs as a non-root user, so always launch Chromium with `--no-sandbox`**,
+otherwise it crashes with "No usable sandbox".
+
+```bash
+playwright --version
+```
+
+For scraping, add Playwright to the project and write a script — it reuses the preloaded
+Chromium (no second download):
+
+```bash
+uv add playwright
+uv run python - <<'PY'
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser = p.chromium.launch(args=["--no-sandbox"])   # headless by default
+    page = browser.new_page()
+    page.goto("https://example.com")
+    print(page.title())
+    page.screenshot(path="shot.png")
+    browser.close()
+PY
+```
+
+Only the global CLI is provided image-wide; a project's own scraping code is the project's
+own dependency (`uv add playwright`).
 
 ---
 

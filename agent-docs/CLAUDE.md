@@ -68,6 +68,33 @@ npx <tool>        # run without global install
 
 ---
 
+## Headless browser / web scraping (Playwright)
+
+A global `playwright` CLI is preinstalled (Python, via `uv tool install`) at
+`/home/coder/.local/bin/playwright`. Chromium is pre-downloaded at `/ms-playwright`
+(`PLAYWRIGHT_BROWSERS_PATH`), ready on container start — no `playwright install` needed.
+
+**Container runs as non-root, so always launch Chromium with `--no-sandbox`** (otherwise
+"No usable sandbox" crash).
+
+```bash
+uv add playwright            # add to the project (reuses the preloaded Chromium)
+uv run python - <<'PY'
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser = p.chromium.launch(args=["--no-sandbox"])   # headless by default
+    page = browser.new_page()
+    page.goto("https://example.com")
+    print(page.title())
+    browser.close()
+PY
+```
+
+The global CLI handles version/tooling; a project's scraping code is the project's own
+dependency.
+
+---
+
 ## Build / compile (C/C++)
 
 ```bash
