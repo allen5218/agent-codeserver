@@ -14,7 +14,7 @@ to agents running inside it.
 | `codex` | npm global (on `PATH`) |
 | `agy` | `/home/coder/.local/bin/agy` |
 | `uv` | `/usr/local/bin/uv` |
-| `playwright` | `/home/coder/.local/bin/playwright` |
+| `playwright-cli` | `/home/coder/.npm-global/bin/playwright-cli` |
 | `unoconvert` | installed with `unoserver` pip package |
 
 ---
@@ -86,38 +86,29 @@ npx ts-node script.ts
 
 ---
 
-## Headless browser / web scraping (Playwright)
+## Headless browser / web scraping (Playwright CLI)
 
-A global `playwright` CLI is preinstalled (Python package, via `uv tool install`).
-Chromium is pre-downloaded at `/ms-playwright` (`PLAYWRIGHT_BROWSERS_PATH`) and is ready
-the moment the container starts — no `playwright install` needed.
+`playwright-cli` ([`@playwright/cli`](https://www.npmjs.com/package/@playwright/cli)) is
+preinstalled globally — Microsoft's agent-oriented Playwright CLI. It drives a real,
+**headless** Chromium (pre-downloaded at `/ms-playwright`) through concise, stateful
+commands. Works as the non-root user with no `--no-sandbox` flag needed.
 
-**The container runs as a non-root user, so always launch Chromium with `--no-sandbox`**,
-otherwise it crashes with "No usable sandbox".
-
-```bash
-playwright --version
-```
-
-For scraping, add Playwright to the project and write a script — it reuses the preloaded
-Chromium (no second download):
+The `playwright-cli` skill is auto-installed into this agent's global skills directory on
+first container start, so you can also just rely on the skill. The CLI is stateful: `open`
+starts a session, subsequent commands act on it until `close`.
 
 ```bash
-uv add playwright
-uv run python - <<'PY'
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    browser = p.chromium.launch(args=["--no-sandbox"])   # headless by default
-    page = browser.new_page()
-    page.goto("https://example.com")
-    print(page.title())
-    page.screenshot(path="shot.png")
-    browser.close()
-PY
+playwright-cli open https://example.com        # start a headless session
+playwright-cli snapshot                         # page snapshot with element refs
+playwright-cli click <ref>                      # act on a ref from the snapshot
+playwright-cli type "hello"
+playwright-cli eval "() => document.title"      # run JS in the page
+playwright-cli screenshot --filename shot.png   # default: .playwright-cli/page-*.png
+playwright-cli close
 ```
 
-Only the global CLI is provided image-wide; a project's own scraping code is the project's
-own dependency (`uv add playwright`).
+Run `playwright-cli --help` for the full command list (navigation, keyboard/mouse, tabs,
+storage/auth state, PDF, tracing, etc.).
 
 ---
 

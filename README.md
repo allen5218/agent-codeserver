@@ -62,19 +62,29 @@ Installed so AI agents can manipulate Office documents programmatically without 
 - `psql` (PostgreSQL client)
 - `pgcli` (PostgreSQL CLI with autocomplete and syntax highlighting)
 
-### Headless browser (Playwright)
+### Headless browser (Playwright CLI for agents)
 
-For driving a headless browser from the CLI — page scraping, automation, `codegen`:
+[`@playwright/cli`](https://www.npmjs.com/package/@playwright/cli) — Microsoft's agent-oriented Playwright CLI (command `playwright-cli`). It exposes a token-efficient command interface purpose-built for coding agents to drive a real browser (an alternative to the Playwright MCP).
 
-- **Playwright CLI** — the Python `playwright` package, installed globally via `uv tool install` (isolated venv, command at `/home/coder/.local/bin/playwright`).
-- **Chromium** — pre-downloaded at build time into `/ms-playwright` (`PLAYWRIGHT_BROWSERS_PATH`), so it is available the moment the container starts and is readable regardless of the runtime UID.
-- System libraries are installed via Playwright's own `install-deps`, so they always match the bundled browser version.
+- **CLI** — installed globally via npm under `/home/coder/.npm-global/` (command `playwright-cli`). Headless by default; works as the non-root container user with no extra flags.
+- **Chromium** — pre-downloaded at build time into `/ms-playwright` (`PLAYWRIGHT_BROWSERS_PATH`), readable regardless of the runtime UID. System libraries come from Playwright's own `install-deps`.
+- **Agent skills** — on first container start the entrypoint installs the `playwright-cli` skill into each agent's **global** skills directory (so all three discover it, and the files persist on the bind-mounts):
+  - Claude Code → `~/.claude/skills/`
+  - Codex → `~/.codex/skills/`
+  - Antigravity → `~/.gemini/antigravity-cli/skills/`
 
-Notes:
+Usage (your agent runs these; you can too):
 
-- The container runs as a **non-root** user, so launch Chromium with `--no-sandbox` (e.g. `chromium.launch(args=["--no-sandbox"])`, or `--no-sandbox` on the CLI) — the in-process Chromium sandbox needs privileges the container does not grant.
-- The runtime needs a large `/dev/shm` or Chromium will crash on big pages; the supplied `compose.yml` sets `shm_size: "1gb"` and `init: true` for the `code-server` service.
-- Only the **global CLI** is provided. A project that imports Playwright in its own scripts should add it as a project dependency (e.g. `uv add playwright`); it will reuse the already-downloaded Chromium in `/ms-playwright` automatically (no second download).
+```bash
+playwright-cli open https://demo.playwright.dev/todomvc/
+playwright-cli type "Buy groceries"
+playwright-cli press Enter
+playwright-cli snapshot                    # capture element refs
+playwright-cli screenshot --filename shot.png
+playwright-cli close
+```
+
+Run `playwright-cli --help` for the full command list, or just point your agent at the CLI and let it read the installed skill. Chromium needs a large `/dev/shm`; the supplied `compose.yml` sets `shm_size: "1gb"` and `init: true`.
 
 ### Pre-installed VS Code extensions
 

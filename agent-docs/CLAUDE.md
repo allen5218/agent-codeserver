@@ -68,30 +68,29 @@ npx <tool>        # run without global install
 
 ---
 
-## Headless browser / web scraping (Playwright)
+## Headless browser / web scraping (Playwright CLI)
 
-A global `playwright` CLI is preinstalled (Python, via `uv tool install`) at
-`/home/coder/.local/bin/playwright`. Chromium is pre-downloaded at `/ms-playwright`
-(`PLAYWRIGHT_BROWSERS_PATH`), ready on container start — no `playwright install` needed.
+`playwright-cli` ([`@playwright/cli`](https://www.npmjs.com/package/@playwright/cli)) is
+preinstalled globally at `/home/coder/.npm-global/bin/playwright-cli` — Microsoft's
+agent-oriented Playwright CLI. It drives a real, **headless** Chromium (pre-downloaded at
+`/ms-playwright`) via concise, stateful commands. Runs as the non-root user with no
+`--no-sandbox` needed.
 
-**Container runs as non-root, so always launch Chromium with `--no-sandbox`** (otherwise
-"No usable sandbox" crash).
+The `playwright-cli` skill is auto-installed into `~/.claude/skills/` on first container
+start, so you can also just use the skill. The CLI is stateful — `open` starts a session,
+later commands act on it until `close`.
 
 ```bash
-uv add playwright            # add to the project (reuses the preloaded Chromium)
-uv run python - <<'PY'
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    browser = p.chromium.launch(args=["--no-sandbox"])   # headless by default
-    page = browser.new_page()
-    page.goto("https://example.com")
-    print(page.title())
-    browser.close()
-PY
+playwright-cli open https://example.com        # start a headless session
+playwright-cli snapshot                         # page snapshot with element refs
+playwright-cli click <ref>                      # act on a ref from the snapshot
+playwright-cli eval "() => document.title"      # run JS in the page
+playwright-cli screenshot --filename shot.png   # default: .playwright-cli/page-*.png
+playwright-cli close
 ```
 
-The global CLI handles version/tooling; a project's scraping code is the project's own
-dependency.
+Run `playwright-cli --help` for the full command list (navigation, keyboard/mouse, tabs,
+storage/auth state, PDF, tracing, etc.).
 
 ---
 
