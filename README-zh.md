@@ -119,11 +119,22 @@ ghcr.io/allen5218/agent-codeserver:<tags>
 
 ## 部署（Docker Compose）
 
-本 repo 附帶 [`compose.yml`](./compose.yml)，會執行兩個服務：`code-server`（本鏡像）與一個 `cloudflared` tunnel——後者讓你不必開放任何 inbound port 即可對外暴露服務。
+本 repo 附帶 [`compose.yml`](./compose.yml)，會執行兩個服務：`code-server`（本鏡像）與一個 `cloudflared` tunnel——後者讓你不必開放任何 inbound port 即可對外暴露服務。鏡像為**多架構**：同一份 `compose.yml` 在 `linux/amd64` 與 `linux/arm64` 都能用，因為它釘的是多架構 manifest-list digest，docker 會自動拉取對應架構。
 
-### 1. 準備主機目錄
+### 1. 取得部署檔案
 
-建立 bind-mount 的目標目錄，並把它們交給容器執行時的 UID:GID（必須與 `.env` 中的 `APP_UID`/`APP_GID` 一致）：
+clone 本 repo（或只把 `compose.yml` 與 `.env.example` 複製出來——部署只需要這兩個檔）：
+
+```bash
+git clone https://github.com/allen5218/agent-codeserver.git
+cd agent-codeserver
+```
+
+接下來所有步驟都在這個目錄執行——它同時含有 `compose.yml` 與 `.env.example`，也是 `docker compose` 讀取它們的所在。
+
+### 2. 準備主機目錄
+
+這些是 `compose.yml` 掛載用的 bind-mount 目標目錄，位於 `/opt/docker-stacks/vscode`，**與 clone 出來的專案目錄是分開的**。建立它們，並交給容器執行時的 UID:GID（必須與 `.env` 中的 `APP_UID`/`APP_GID` 一致）：
 
 ```bash
 # 建目錄（對應 compose.yml 掛載的 volume）
@@ -138,7 +149,9 @@ sudo chown -R 1000:1000 /opt/docker-stacks/vscode
 
 > `~/.local`（Playwright、Antigravity）與 `~/.npm-global`（Codex）**刻意不掛載**——這些 CLI 是 build 時烤進鏡像的，用空目錄覆蓋會把它們遮蔽掉。只有當你想持久化自行 `npm update` 的 Codex 時，才另外掛 `~/.npm-global`（見下方「建議持久化路徑」）。
 
-### 2. 設定環境變數
+### 3. 設定環境變數
+
+在 clone 出來的專案目錄內（`.env.example` 所在）：
 
 ```bash
 cp .env.example .env
@@ -147,7 +160,7 @@ cp .env.example .env
 
 完整清單見 [`.env.example`](./.env.example)。
 
-### 3. Cloudflare Tunnel
+### 4. Cloudflare Tunnel
 
 1. Zero Trust dashboard → **Networks → Tunnels → Create a tunnel**
 2. 選 **Cloudflared**，命名（例如 `homelab`）
@@ -158,7 +171,7 @@ cp .env.example .env
    - **Type**：`HTTP`
    - **URL**：`code-server:8080`（compose 服務名 + 容器內 port，同網段直接解析）
 
-### 4. 啟動
+### 5. 啟動
 
 ```bash
 docker compose up -d

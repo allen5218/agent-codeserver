@@ -119,11 +119,22 @@ Each tag is a multi-arch manifest covering `linux/amd64` and `linux/arm64`; `doc
 
 ## Deployment (Docker Compose)
 
-The repo ships a [`compose.yml`](./compose.yml) running two services: `code-server` (this image) and a `cloudflared` tunnel that exposes it without opening any inbound ports.
+The repo ships a [`compose.yml`](./compose.yml) running two services: `code-server` (this image) and a `cloudflared` tunnel that exposes it without opening any inbound ports. The image is **multi-arch**: the same `compose.yml` works on both `linux/amd64` and `linux/arm64` because it is pinned to a multi-arch manifest-list digest, and Docker pulls the matching architecture automatically.
 
-### 1. Prepare host directories
+### 1. Get the deployment files
 
-Create the bind-mount targets and hand them to the UID:GID the container will run as (must match `APP_UID`/`APP_GID` in `.env`):
+Clone the repo (or just copy `compose.yml` and `.env.example` out of it — those two files are all you need to deploy):
+
+```bash
+git clone https://github.com/allen5218/agent-codeserver.git
+cd agent-codeserver
+```
+
+Run every remaining step from this directory — it holds both `compose.yml` and `.env.example`, and is where `docker compose` looks for them.
+
+### 2. Prepare host directories
+
+These are the bind-mount targets referenced by `compose.yml`. They live under `/opt/docker-stacks/vscode`, **separate from the cloned repo**. Create them and hand them to the UID:GID the container will run as (must match `APP_UID`/`APP_GID` in `.env`):
 
 ```bash
 # Create the bind-mount targets (matching the volumes in compose.yml)
@@ -138,7 +149,9 @@ sudo chown -R 1000:1000 /opt/docker-stacks/vscode
 
 > `~/.local` (Playwright, Antigravity) and `~/.npm-global` (Codex) are **deliberately not mounted** — these CLIs are baked into the image at build time, and overlaying an empty host directory would shadow them. Only mount `~/.npm-global` if you want to persist a Codex that you `npm update` yourself (see Suggested persistent paths below).
 
-### 2. Configure environment
+### 3. Configure environment
+
+From the cloned repo (where `.env.example` lives):
 
 ```bash
 cp .env.example .env
@@ -147,7 +160,7 @@ cp .env.example .env
 
 See [`.env.example`](./.env.example) for the full list.
 
-### 3. Cloudflare Tunnel
+### 4. Cloudflare Tunnel
 
 1. Zero Trust dashboard → **Networks → Tunnels → Create a tunnel**
 2. Choose **Cloudflared** and name it (e.g. `homelab`)
@@ -158,7 +171,7 @@ See [`.env.example`](./.env.example) for the full list.
    - **Type**: `HTTP`
    - **URL**: `code-server:8080` (the compose service name + in-container port, resolved on the shared network)
 
-### 4. Start
+### 5. Start
 
 ```bash
 docker compose up -d
