@@ -1,0 +1,34 @@
+services:
+  code-server:
+    container_name: code-server
+    image: ghcr.io/allen5218/agent-codeserver:f21554b
+    environment:
+      - PASSWORD=${CODE_PASSWORD}
+      - XDG_DATA_HOME=/home/coder/.config
+      - ENABLE_CODEX_REMOTE=1
+    volumes:
+      - /opt/docker-stacks/vscode/data:/home/coder/.config
+      - /opt/docker-stacks/vscode/projects:/home/coder/project
+      - /opt/docker-stacks/vscode/codex:/home/coder/.codex
+      - /opt/docker-stacks/vscode/gemini:/home/coder/.gemini
+      - /opt/docker-stacks/vscode/claude:/home/coder/.claude
+      - /opt/docker-stacks/vscode/claude.json:/home/coder/.claude.json
+    user: "${APP_UID}:${APP_GID}"
+    group_add:
+      - bwrap-users
+    working_dir: /home/coder/project
+    # Chromium 預設只用 64MB 的 /dev/shm，載入大頁面時會崩潰；放大到 1GB
+    shm_size: "1gb"
+    # 用 tini 當 PID 1，回收 Chromium fork 出的大量子行程（避免 zombie）
+    init: true
+    restart: unless-stopped
+
+  tunnel:
+    container_name: cloudflared-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel run
+    depends_on:
+      - code-server
+    environment:
+      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
