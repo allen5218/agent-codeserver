@@ -62,19 +62,29 @@ English: [README.md](./README.md)
 - `psql`（PostgreSQL 客戶端）
 - `pgcli`（具自動補全與語法高亮的 PostgreSQL CLI）
 
-### Headless 瀏覽器（Playwright）
+### Headless 瀏覽器（給 agent 的 Playwright CLI）
 
-用於從 CLI 驅動 headless 瀏覽器——網頁爬取、自動化、`codegen`：
+[`@playwright/cli`](https://www.npmjs.com/package/@playwright/cli) — Microsoft 為 coding agent 設計的 Playwright CLI（指令 `playwright-cli`）。它提供 token-efficient 的指令介面，專為 coding agent 操作真實瀏覽器而生（是 Playwright MCP 的替代方案）。
 
-- **Playwright CLI** — Python 的 `playwright` 套件，透過 `uv tool install` 全域安裝（隔離 venv，指令位於 `/home/coder/.local/bin/playwright`）。
-- **Chromium** — build 時預先下載至 `/ms-playwright`（`PLAYWRIGHT_BROWSERS_PATH`），容器一啟動即可用，且不論執行 UID 為何都可讀取。
-- 系統函式庫由 Playwright 自帶的 `install-deps` 安裝，永遠與內建的瀏覽器版本相符。
+- **CLI** — 透過 npm 全域安裝於 `/home/coder/.npm-global/`（指令 `playwright-cli`）。預設 headless；以非 root 容器使用者執行即可，不需額外參數。
+- **Chromium** — build 時預先下載至 `/ms-playwright`（`PLAYWRIGHT_BROWSERS_PATH`），不論執行 UID 為何都可讀取。系統函式庫由 Playwright 自帶的 `install-deps` 安裝。
+- **Agent skills** — 容器首次啟動時，entrypoint 會把 `playwright-cli` skill 裝進每個 agent 的**全域** skills 目錄（三者都能讀到，且檔案在 bind-mount 上持久化）：
+  - Claude Code → `~/.claude/skills/`
+  - Codex → `~/.codex/skills/`
+  - Antigravity → `~/.gemini/antigravity-cli/skills/`
 
-注意事項：
+用法（agent 會自己跑，你也可以）：
 
-- 容器以**非 root** 使用者執行，所以啟動 Chromium 時請帶 `--no-sandbox`（例如 `chromium.launch(args=["--no-sandbox"])`，或在 CLI 加 `--no-sandbox`）——Chromium 自身的行程內沙箱需要容器未授予的權限。
-- runtime 需要較大的 `/dev/shm`，否則 Chromium 在載入大頁面時會崩潰；隨附的 `compose.yml` 已為 `code-server` 服務設定 `shm_size: "1gb"` 與 `init: true`。
-- 鏡像層級只提供**全域 CLI**。若某專案要在自己的腳本中 import Playwright，應將其加為專案依賴（例如 `uv add playwright`）；它會自動重用已下載於 `/ms-playwright` 的 Chromium（不會重新下載）。
+```bash
+playwright-cli open https://demo.playwright.dev/todomvc/
+playwright-cli type "Buy groceries"
+playwright-cli press Enter
+playwright-cli snapshot                    # 取得元素 ref
+playwright-cli screenshot --filename shot.png
+playwright-cli close
+```
+
+完整指令用 `playwright-cli --help`，或直接把 agent 指向這個 CLI 讓它自己讀 skill。Chromium 需要較大的 `/dev/shm`；隨附的 `compose.yml` 已設 `shm_size: "1gb"` 與 `init: true`。
 
 ### 預裝的 VS Code 擴充套件
 
