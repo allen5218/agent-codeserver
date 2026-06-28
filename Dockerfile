@@ -56,9 +56,12 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 # 系統函式庫透過 Playwright 自帶的 install-deps 安裝，版本永遠跟著 Playwright 走，
 # 不必手動維護一長串 lib* 套件清單。
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+# uvx 在此以 root 執行；若沿用全域 XDG_DATA_HOME=/home/coder/.config，uv 會把 python/cache
+# 以 root 身分寫進 coder 的 .config，使其變成 root-owned，之後 coder 階段的步驟（如裝擴充套件）
+# 便無法在 .config 下寫入。故此處把 XDG_DATA_HOME 導到 root 自己的暫存路徑。
 RUN mkdir -p /ms-playwright && chown coder:coder /ms-playwright \
     && apt-get update \
-    && uvx playwright install-deps chromium \
+    && XDG_DATA_HOME=/root/.local/share uvx playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- 準備 extension seed 目錄 ----
@@ -78,8 +81,14 @@ RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
 # ---- Playwright CLI（uv 全域安裝）+ 預載 Chromium ----
 # uv tool install 把 playwright CLI 裝進隔離 venv，指令連結到 /home/coder/.local/bin/playwright。
 # 接著下載 Chromium 到 PLAYWRIGHT_BROWSERS_PATH（/ms-playwright），供 agent 直接以 CLI 操作。
-# 注意：此處 PATH 尚未含 ~/.local/bin（ENV PATH 設在檔案後段），故用絕對路徑呼叫
-RUN uv tool install playwright \
+#
+# 兩個陷阱：
+# 1) 本檔 XDG_DATA_HOME 被設成 /home/coder/.config，而 uv 會把 tools/python 裝到
+#    $XDG_DATA_HOME/uv/ → 落在 .config（build 時不可寫，runtime 又會被 volume 覆蓋）。
+#    因此這裡單獨覆蓋 XDG_DATA_HOME 到 ~/.local/share（已烤進 image、不被掛載）。
+# 2) 此處 PATH 尚未含 ~/.local/bin（ENV PATH 設在檔案後段），故用絕對路徑呼叫 playwright。
+RUN XDG_DATA_HOME=/home/coder/.local/share \
+    uv tool install playwright \
     && /home/coder/.local/bin/playwright install chromium
 
 # Bake VS Code extensions 到 seed 目錄
