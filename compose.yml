@@ -1,7 +1,7 @@
 services:
   code-server:
     container_name: code-server
-    image: ghcr.io/allen5218/agent-codeserver:f21554b
+    image: ghcr.io/allen5218/agent-codeserver:f21554b@sha256:7d64f35206599d99419ea0333ac7e4918f98f1b6bce810328621731101f9b92b
     environment:
       - PASSWORD=${CODE_PASSWORD}
       - XDG_DATA_HOME=/home/coder/.config
@@ -25,7 +25,7 @@ services:
 
   tunnel:
     container_name: cloudflared-tunnel
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:latest@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
     restart: unless-stopped
     command: tunnel run
     depends_on:
