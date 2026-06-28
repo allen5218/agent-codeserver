@@ -9,16 +9,24 @@
   "pinDigests": true,
   "packageRules": [
     {
+      "description": "Auto-merge all GitHub Actions updates (grouped)",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
       "automerge": true,
       "automergeStrategy": "squash"
     },
     {
-      "matchDatasources": ["docker"],
+      "description": "Auto-merge Dockerfile base image & compose.yml image deps for digest/pin/patch/minor; majors get a normal PR for manual review",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["digest", "pin", "patch", "minor"],
+      "automerge": true,
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Keep the code-server base image in its own grouped PR",
+      "matchManagers": ["dockerfile"],
       "matchPackageNames": ["codercom/code-server"],
-      "groupName": "code-server base image",
-      "automerge": false
+      "groupName": "code-server base image"
     }
   ]
 }
