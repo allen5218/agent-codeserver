@@ -78,8 +78,9 @@ RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
 # ---- Playwright CLI（uv 全域安裝）+ 預載 Chromium ----
 # uv tool install 把 playwright CLI 裝進隔離 venv，指令連結到 /home/coder/.local/bin/playwright。
 # 接著下載 Chromium 到 PLAYWRIGHT_BROWSERS_PATH（/ms-playwright），供 agent 直接以 CLI 操作。
+# 注意：此處 PATH 尚未含 ~/.local/bin（ENV PATH 設在檔案後段），故用絕對路徑呼叫
 RUN uv tool install playwright \
-    && playwright install chromium
+    && /home/coder/.local/bin/playwright install chromium
 
 # Bake VS Code extensions 到 seed 目錄
 RUN code-server \
