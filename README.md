@@ -1,5 +1,7 @@
 # agent-codeserver
 
+繁體中文版：[README-zh.md](./README-zh.md)
+
 A customized [code-server](https://github.com/coder/code-server) Docker image preloaded with developer tooling and AI coding assistants. Intended for homelab and remote-development setups where you want a single browser-accessible VS Code environment with AI agents already wired in.
 
 ## What’s inside
@@ -124,23 +126,23 @@ The repo ships a [`compose.yml`](./compose.yml) running two services: `code-serv
 Create the bind-mount targets and hand them to the UID:GID the container will run as (must match `APP_UID`/`APP_GID` in `.env`):
 
 ```bash
-# 建目錄（對應 compose.yml 掛載的 volume）
+# Create the bind-mount targets (matching the volumes in compose.yml)
 sudo mkdir -p /opt/docker-stacks/vscode/{data,projects,codex,gemini,claude}
 
-# Claude Code 需要一個既存的 JSON 檔來掛載
+# Claude Code needs an existing JSON file to mount
 echo '{}' | sudo tee /opt/docker-stacks/vscode/claude.json > /dev/null
 
-# 全部 chown 給容器要用的 UID:GID（這裡用 1000:1000，依 .env 調整）
+# chown everything to the UID:GID the container runs as (1000:1000 here; match .env)
 sudo chown -R 1000:1000 /opt/docker-stacks/vscode
 ```
 
-> `~/.local`（Playwright、Antigravity）與 `~/.npm-global`（Codex）**刻意不掛載**——這些 CLI 是 build 時烤進 image 的，用空目錄覆蓋會把它們遮蔽掉。要持久化使用者自行 `npm update` 的 Codex 時才另外掛 `~/.npm-global`（見下方 Suggested persistent paths）。
+> `~/.local` (Playwright, Antigravity) and `~/.npm-global` (Codex) are **deliberately not mounted** — these CLIs are baked into the image at build time, and overlaying an empty host directory would shadow them. Only mount `~/.npm-global` if you want to persist a Codex that you `npm update` yourself (see Suggested persistent paths below).
 
 ### 2. Configure environment
 
 ```bash
 cp .env.example .env
-# 編輯 .env：填入 CODE_PASSWORD、APP_UID/APP_GID、CF_TUNNEL_TOKEN
+# Edit .env: set CODE_PASSWORD, APP_UID/APP_GID, CF_TUNNEL_TOKEN
 ```
 
 See [`.env.example`](./.env.example) for the full list.
@@ -148,13 +150,13 @@ See [`.env.example`](./.env.example) for the full list.
 ### 3. Cloudflare Tunnel
 
 1. Zero Trust dashboard → **Networks → Tunnels → Create a tunnel**
-2. 選 **Cloudflared**，命名（例如 `homelab`）
-3. **Copy token** — 這就是 `.env` 裡的 `CF_TUNNEL_TOKEN`
-4. **Public Hostname** 頁籤新增一筆：
+2. Choose **Cloudflared** and name it (e.g. `homelab`)
+3. **Copy token** — this is `CF_TUNNEL_TOKEN` in `.env`
+4. On the **Public Hostname** tab, add an entry:
    - **Subdomain**: `code`
    - **Domain**: `your.dev`
    - **Type**: `HTTP`
-   - **URL**: `code-server:8080`（compose 服務名 + 容器內 port，同網段直接解析）
+   - **URL**: `code-server:8080` (the compose service name + in-container port, resolved on the shared network)
 
 ### 4. Start
 
@@ -162,7 +164,7 @@ See [`.env.example`](./.env.example) for the full list.
 docker compose up -d
 ```
 
-開啟 `https://code.your.dev`，用 `CODE_PASSWORD` 登入即可。
+Open `https://code.your.dev` and log in with `CODE_PASSWORD`.
 
 ## Environment
 
