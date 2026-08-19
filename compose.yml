@@ -1,7 +1,7 @@
 services:
   code-server:
     container_name: code-server
-    image: ghcr.io/allen5218/agent-codeserver:latest@sha256:ea3195b0bfcb83e8e300011685a0738bdafddba05cd37ead011bf52a72751852
+    image: ghcr.io/allen5218/agent-codeserver:latest@sha256:e6f3fb8e12f68078d09ff39aad752b295cc420cc541bbd76a2498f09756c7ed2
     environment:
       - PASSWORD=${CODE_PASSWORD}
       - XDG_DATA_HOME=/home/coder/.config
