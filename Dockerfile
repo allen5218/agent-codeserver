@@ -1,4 +1,4 @@
-FROM codercom/code-server:4.135.0@sha256:ccd326184d71efc5ebb94155eda7bb30153902342a35dbc8525450d81aa55012
+FROM codercom/code-server:4.136.1@sha256:c6eec5b3d5035fc121661fb6179c61bcb4dc14c81e410efc5a779e7ee0e20cdf
 USER root
 ENV XDG_DATA_HOME=/home/coder/.config
 
